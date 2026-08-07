@@ -1,20 +1,48 @@
+/* ---------- Design tokens ---------- */
 :root {
-  --bg: #0f1115;
-  --card-bg: #171a21;
-  --text: #f2f2f2;
-  --muted: #9aa0aa;
-  --accent: #6c8cff;
-  --border: #262a33;
+  --bg: #f5f6fb;
+  --bg-elevated: rgba(20, 22, 34, 0.035);
+  --bg-elevated-strong: rgba(20, 22, 34, 0.06);
+  --border: rgba(20, 22, 34, 0.12);
+  --text: #14162A;
+  --text-muted: #5b5f78;
+  --text-faint: #9497ad;
+
+  --indigo: #6c8cff;
+  --cyan: #34e0d8;
+  --magenta: #ff5fae;
+
+  --gradient: linear-gradient(120deg, var(--indigo), var(--cyan) 55%, var(--magenta));
+
+  --radius-lg: 28px;
+  --radius-md: 16px;
+  --radius-sm: 10px;
+
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  color-scheme: light;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg: #f5f6f8;
-    --card-bg: #ffffff;
-    --text: #17181c;
-    --muted: #5c6270;
-    --accent: #3355dd;
-    --border: #e3e5ea;
+:root[data-theme="dark"] {
+  --bg: #05060d;
+  --bg-elevated: rgba(255, 255, 255, 0.04);
+  --bg-elevated-strong: rgba(255, 255, 255, 0.07);
+  --border: rgba(255, 255, 255, 0.1);
+  --text: #f1f2fb;
+  --text-muted: #9ba0c0;
+  --text-faint: #565a78;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #05060d;
+    --bg-elevated: rgba(255, 255, 255, 0.04);
+    --bg-elevated-strong: rgba(255, 255, 255, 0.07);
+    --border: rgba(255, 255, 255, 0.1);
+    --text: #f1f2fb;
+    --text-muted: #9ba0c0;
+    --text-faint: #565a78;
+    color-scheme: dark;
   }
 }
 
@@ -23,107 +51,514 @@
 body {
   margin: 0;
   min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  transition: background 0.5s var(--ease), color 0.5s var(--ease);
+}
+
+img, svg { display: block; max-width: 100%; }
+a { color: inherit; text-decoration: none; }
+
+/* ---------- Backdrop canvas + overlays ---------- */
+#node-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.grid-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image:
+    linear-gradient(to right, rgba(108, 140, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(108, 140, 255, 0.06) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 70% 55% at 50% 40%, black 0%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 55% at 50% 40%, black 0%, transparent 75%);
+}
+
+/* ---------- Custom cursor: HUD reticle ---------- */
+/* Two independently-translated elements (dot follows tightly, ring lags
+   behind) — plain `translate`/`transform`, no SVG filter, so it stays cheap
+   even while the constellation canvas is animating underneath. */
+.cursor-reticle {
+  position: fixed;
+  inset: 0;
+  z-index: 61;
+  pointer-events: none;
+}
+.reticle-dot {
+  position: absolute;
+  top: 0; left: 0;
+  width: 6px; height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan);
+  will-change: translate;
+}
+.reticle-ring {
+  position: absolute;
+  top: 0; left: 0;
+  width: 34px; height: 34px;
+  margin: -17px 0 0 -17px;
+  border-radius: 50%;
+  border: 1.5px dashed var(--indigo);
+  will-change: translate;
+  animation: reticle-spin 5s linear infinite;
+  transition: width 0.25s var(--ease), height 0.25s var(--ease), margin 0.25s var(--ease), border-color 0.25s var(--ease);
+}
+@keyframes reticle-spin { to { transform: rotate(360deg); } }
+
+.cursor-reticle.active .reticle-ring {
+  width: 48px; height: 48px;
+  margin: -24px 0 0 -24px;
+  border-style: solid;
+  border-color: var(--magenta);
+}
+.cursor-reticle.active .reticle-dot {
+  background: var(--magenta);
+  box-shadow: 0 0 10px var(--magenta);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  body { cursor: none; }
+}
+@media (hover: none), (pointer: coarse) {
+  .cursor-reticle { display: none; }
+}
+
+/* ---------- Theme toggle ---------- */
+/* Sits in the card's own top-right corner rather than floating separately —
+   transparent by default so it reads as part of the card edge, with a
+   background that only appears on interaction. */
+/* Element-qualified selector: needs to outrank [data-tooltip]'s
+   `position: relative` (same specificity, later in the cascade), which
+   would otherwise turn this into a normal-flow element and strand it. */
+button.theme-toggle {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 5;
+  width: 30px; height: 30px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.3s var(--ease), border-color 0.3s var(--ease), color 0.3s var(--ease);
+}
+.theme-toggle:hover, .theme-toggle:focus-visible {
+  background: var(--bg-elevated-strong);
+  border-color: var(--border);
+  color: var(--text);
+}
+.theme-toggle svg { width: 15px; height: 15px; position: absolute; transition: transform 0.4s var(--ease), opacity 0.4s var(--ease); }
+.theme-toggle .icon-sun { opacity: 0; transform: rotate(60deg) scale(0.6); }
+.theme-toggle .icon-moon { opacity: 1; transform: rotate(0) scale(1); }
+:root[data-theme="dark"] .theme-toggle .icon-sun { opacity: 1; transform: rotate(0) scale(1); }
+:root[data-theme="dark"] .theme-toggle .icon-moon { opacity: 0; transform: rotate(-60deg) scale(0.6); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-toggle .icon-sun { opacity: 1; transform: rotate(0) scale(1); }
+  :root:not([data-theme="light"]) .theme-toggle .icon-moon { opacity: 0; transform: rotate(-60deg) scale(0.6); }
+}
+
+/* ---------- Constellations ---------- */
+/* Invisible hit-areas positioned over each hand-placed constellation (drawn
+   on the canvas). DOM handles hover/tap detection + the label card; the
+   canvas only reads the resulting index to brighten the matching cluster.
+   Sized generously so the cluster is an easy target on any pointer type,
+   including touch (tap toggles the label — see script.js). Each cluster's
+   points are asymmetric (biased away from the card, see CONSTELLATIONS in
+   script.js), so this box is a loose bounding rect, not a tight fit. Hidden
+   below ~1050px — the anchors sit close to the viewport edge specifically so
+   the (now much larger) point spread clears the card down to that width. */
+.constellation-hits {
+  display: none;
+}
+.constellation-hit {
+  position: fixed;
+  z-index: 3;
+  width: 500px;
+  height: 460px;
+  translate: -50% -50%;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.constellation-label {
+  position: fixed;
+  z-index: 45;
+  max-width: 230px;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-elevated-strong);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 16px 40px -16px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  translate: -50% 12px;
+  scale: 0.96;
+  pointer-events: none;
+  transition: opacity 0.25s var(--ease), translate 0.25s var(--ease), scale 0.25s var(--ease);
+}
+.constellation-label.visible {
+  opacity: 1;
+  translate: -50% 0;
+  scale: 1;
+}
+.constellation-title {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.constellation-desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+@media (min-width: 1050px) {
+  .constellation-hits { display: block; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .constellation-hits { display: none; }
+}
+
+/* ---------- Custom tooltips ---------- */
+[data-tooltip] { position: relative; }
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 11px);
+  left: 50%;
+  translate: -50% 4px;
+  padding: 6px 10px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  color: var(--bg);
+  background:
+    linear-gradient(90deg, var(--indigo), var(--cyan), var(--magenta)) bottom / 100% 2px no-repeat,
+    var(--text);
+  box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  scale: 0.96;
+  pointer-events: none;
+  transition: opacity 0.18s var(--ease), translate 0.18s var(--ease), scale 0.18s var(--ease);
+  z-index: 70;
+}
+[data-tooltip]:hover::after, [data-tooltip]:focus-visible::after {
+  opacity: 1;
+  translate: -50% 0;
+  scale: 1;
+}
+[data-tooltip].tooltip-below::after {
+  bottom: auto;
+  top: calc(100% + 11px);
+  translate: -50% -4px;
+  padding: 8px 10px 6px;
+  background:
+    linear-gradient(90deg, var(--indigo), var(--cyan), var(--magenta)) top / 100% 2px no-repeat,
+    var(--text);
+}
+[data-tooltip].tooltip-below:hover::after, [data-tooltip].tooltip-below:focus-visible::after {
+  translate: -50% 0;
+}
+
+/* ---------- Layout ---------- */
+main {
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--bg);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  padding: 24px;
+  gap: 22px;
+  padding: 90px 20px 40px;
 }
 
+/* ---------- Card ---------- */
 .card {
-  background: var(--card-bg);
+  position: relative;
+  background: var(--bg-elevated);
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 40px 32px;
-  max-width: 420px;
+  border-radius: var(--radius-lg);
+  padding: 38px 32px 32px;
+  max-width: 480px;
   width: 100%;
   text-align: center;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.35);
+  transform-style: preserve-3d;
+  transition: transform 0.15s ease-out, border-color 0.35s var(--ease), background 0.35s var(--ease);
+}
+.card::before {
+  content: "";
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(340px circle at var(--mx, 50%) var(--my, 20%), rgba(108, 140, 255, 0.16), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.35s var(--ease);
+  pointer-events: none;
+}
+.card:hover::before { opacity: 1; }
+
+/* ---------- Reveal on load ---------- */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.9s var(--ease), transform 0.9s var(--ease);
+}
+.reveal.in-view { opacity: 1; transform: translateY(0); }
+
+/* ---------- Avatar ---------- */
+.avatar-wrap {
+  position: relative;
+  width: 176px;
+  height: 176px;
+  margin: 0 auto 24px;
 }
 
 .avatar {
-  width: 120px;
-  height: 120px;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid var(--border);
-  margin-bottom: 16px;
+  border: 1px solid var(--border);
 }
 
-h1 {
+/* ---------- Pill ---------- */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 16px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated-strong);
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin: 0 0 22px;
+}
+
+/* ---------- Name + bio ---------- */
+.name {
+  font-size: clamp(26px, 5vw, 32px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
   margin: 0 0 4px;
-  font-size: 1.6rem;
+  min-height: 1.2em;
 }
-
-.handle {
-  margin: 0 0 16px;
-  color: var(--muted);
-  font-size: 0.95rem;
+.gradient-text {
+  background: var(--gradient);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shift 6s ease-in-out infinite;
+}
+@keyframes shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
 .bio {
-  margin: 0 0 24px;
-  color: var(--text);
+  margin: 0 0 6px;
+  color: var(--text-faint);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  font-weight: 700;
+}
+
+.services {
+  margin: 0 0 20px;
+  color: var(--text-faint);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+}
+
+.tagline {
+  margin: 0 0 22px;
+  color: var(--text-muted);
   line-height: 1.5;
-  font-size: 0.95rem;
+  font-size: 0.98rem;
 }
 
-.bio a {
-  color: var(--accent);
-  text-decoration: none;
+/* ---------- Client logos ---------- */
+.clients {
+  margin: 0 0 26px;
+}
+.clients-logos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 20px 26px;
+}
+.clients-logos img {
+  height: 26px;
+  width: auto;
+  /* No max-width cap: capping it below a wide logo's natural width forced
+     object-fit:contain to shrink the whole image to fit, so wide logos
+     rendered visibly smaller than square ones at the "same" 26px height —
+     that mismatch was the reported "one is big, one is small" bug. */
+  object-fit: contain;
+  /* Flattens every source logo to solid dark ink, appropriate for the
+     default light theme; inverted to white below for dark mode. */
+  filter: brightness(0);
+  opacity: 0.45;
+  transition: opacity 0.3s var(--ease);
+}
+.clients-logos img:hover { opacity: 0.85; }
+:root[data-theme="dark"] .clients-logos img { filter: brightness(0) invert(1); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .clients-logos img { filter: brightness(0) invert(1); }
 }
 
-.bio a:hover {
-  text-decoration: underline;
-}
-
-.cta {
+/* iFOREST's source file has a tagline block to the right of the mark;
+   this clips the rendered width to just the "iFOREST" wordmark instead of
+   showing that extra text at a barely-legible size. */
+.logo-clip {
   display: inline-block;
-  margin: 0 0 24px;
-  padding: 10px 20px;
-  border-radius: 999px;
-  border: none;
-  background: var(--accent);
-  color: #fff;
-  font-size: 0.9rem;
+  height: 26px;
+  overflow: hidden;
+  vertical-align: middle;
+}
+.logo-clip img {
+  display: block;
+  height: 26px;
+  width: auto;
+  max-width: none;
+}
+.logo-clip-iforest { width: 60px; }
+/* ThinkSys's bold, thick-stroke letterforms at a wide (4.8:1) aspect ratio
+   carry far more visual weight than the other marks at the same 26px
+   height — sized down to match their perceived (not just measured) size. */
+.logo-thinksys { height: 19px; }
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 22px;
+  border-radius: 100px;
+  font-size: 15px;
   font-weight: 600;
   font-family: inherit;
+  border: 1px solid transparent;
   cursor: pointer;
-  transition: opacity 0.15s, transform 0.15s;
+  white-space: nowrap;
+  transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease);
+  margin-bottom: 16px;
+}
+.btn svg { width: 16px; height: 16px; }
+
+.btn-primary {
+  background: var(--gradient);
+  background-size: 200% auto;
+  color: #0a0a12;
+  box-shadow: 0 10px 34px -10px rgba(108, 140, 255, 0.55);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 40px -8px rgba(108, 140, 255, 0.7);
+  background-position: 100% 50%;
 }
 
-.cta:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
+/* ---------- CTA subline + portfolio link ---------- */
+.cta-subline {
+  margin: 0 0 20px;
+  color: var(--text-faint);
+  font-size: 0.85rem;
+  line-height: 1.5;
 }
 
+.portfolio-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 26px;
+  padding-bottom: 2px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  transition: color 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+.portfolio-link svg { width: 13px; height: 13px; }
+.portfolio-link:hover {
+  color: var(--indigo);
+  border-color: var(--indigo);
+}
+
+/* ---------- Socials ---------- */
 .socials {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   justify-content: center;
 }
-
 .socials a {
-  color: var(--text);
-  text-decoration: none;
-  font-size: 0.85rem;
-  padding: 8px 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  transition: border-color 0.15s, color 0.15s;
+  width: 30px; height: 30px;
+  display: grid; place-items: center;
+  color: var(--text-muted);
+  transition: color 0.3s var(--ease), transform 0.3s var(--ease);
 }
-
+.socials a svg { width: 15px; height: 15px; }
 .socials a:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  color: var(--indigo);
+  transform: translateY(-3px);
 }
 
-footer {
-  margin-top: 24px;
-  color: var(--muted);
-  font-size: 0.8rem;
+/* ---------- Footer ---------- */
+.footer-legal {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-faint);
+  margin: 0;
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }
