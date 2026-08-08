@@ -422,19 +422,24 @@ main {
 .clients {
   margin: 0 0 26px;
 }
+/* Grid rather than flex-wrap: with an exact 9 logos, this guarantees a true
+   3x3 arrangement (row-major fill) regardless of each logo's own width,
+   instead of leaving the row breaks to flex-wrap's natural (and here,
+   pixel-margin-dependent) line wrapping. */
 .clients-logos {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   align-items: center;
-  justify-content: center;
-  gap: 20px 26px;
+  justify-items: center;
+  row-gap: 20px;
+  column-gap: 26px;
 }
 .clients-logos img {
-  height: 26px;
+  height: 24px;
   width: auto;
   /* No max-width cap: capping it below a wide logo's natural width forced
      object-fit:contain to shrink the whole image to fit, so wide logos
-     rendered visibly smaller than square ones at the "same" 26px height —
+     rendered visibly smaller than square ones at the "same" height —
      that mismatch was the reported "one is big, one is small" bug. */
   object-fit: contain;
   /* Flattens every source logo to solid dark ink, appropriate for the
@@ -448,27 +453,15 @@ main {
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .clients-logos img { filter: brightness(0) invert(1); }
 }
-
-/* iFOREST's source file has a tagline block to the right of the mark;
-   this clips the rendered width to just the "iFOREST" wordmark instead of
-   showing that extra text at a barely-legible size. */
-.logo-clip {
-  display: inline-block;
-  height: 26px;
-  overflow: hidden;
-  vertical-align: middle;
-}
-.logo-clip img {
-  display: block;
-  height: 26px;
-  width: auto;
-  max-width: none;
-}
-.logo-clip-iforest { width: 60px; }
-/* ThinkSys's bold, thick-stroke letterforms at a wide (4.8:1) aspect ratio
-   carry far more visual weight than the other marks at the same 26px
-   height — sized down to match their perceived (not just measured) size. */
-.logo-thinksys { height: 19px; }
+/* Per-logo optical sizing at the shared 24px base: Elsevier's condensed
+   all-caps serif is wide enough at 24px to dominate the row, so it's sized
+   down; ThinkSys/iFOREST are trimmed slightly for the same reason, ThinkSys
+   more so; Boon reads visually smaller than its neighbors at the shared
+   height, so it's nudged up instead. */
+.clients-logos img.logo-sm { height: 18px; }
+.clients-logos img.logo-boost { height: 28px; }
+.clients-logos img.logo-reduce { height: 21px; }
+.clients-logos img.logo-reduce-sm { height: 17px; }
 
 /* ---------- Buttons ---------- */
 .btn {
