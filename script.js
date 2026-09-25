@@ -76,7 +76,10 @@
   /* ---------- Theme toggle ---------- */
   const root = document.documentElement;
   const themeToggle = document.getElementById("theme-toggle");
-  const stored = localStorage.getItem("raghav-theme");
+  // Storage can throw (blocked cookies, some private modes); never let that
+  // take down the rest of the script.
+  let stored = null;
+  try { stored = localStorage.getItem("raghav-theme"); } catch {}
   if (stored) root.setAttribute("data-theme", stored);
 
   function currentTheme() {
@@ -94,7 +97,7 @@
   themeToggle?.addEventListener("click", () => {
     const next = currentTheme() === "dark" ? "light" : "dark";
     root.setAttribute("data-theme", next);
-    localStorage.setItem("raghav-theme", next);
+    try { localStorage.setItem("raghav-theme", next); } catch {}
     syncThemeTooltip();
   });
 

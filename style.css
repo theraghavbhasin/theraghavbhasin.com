@@ -502,11 +502,17 @@ main {
   line-height: 1.5;
 }
 
+.text-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 22px;
+  margin-bottom: 26px;
+}
 .portfolio-link {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-bottom: 26px;
   padding-bottom: 2px;
   font-size: 0.88rem;
   font-weight: 600;
