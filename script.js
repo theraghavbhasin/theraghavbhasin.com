@@ -111,43 +111,6 @@
     requestAnimationFrame(() => el.classList.add("in-view"));
   });
 
-  /* ---------- Name glitch/decode effect (on load + on hover) ---------- */
-  const gradientText = document.querySelector(".gradient-text");
-  let scrambling = false;
-  function scrambleText(el, final, { frames = 18, interval = 35 } = {}) {
-    if (scrambling) return;
-    scrambling = true;
-    const glyphs = "!<>-_\\/[]{}—=+*^?#";
-    let frame = 0;
-
-    const tick = () => {
-      frame++;
-      const revealCount = Math.floor((frame / frames) * final.length);
-      el.textContent = final
-        .split("")
-        .map((ch, i) => {
-          if (ch === " ") return " ";
-          if (i < revealCount) return final[i];
-          return glyphs[Math.floor(Math.random() * glyphs.length)];
-        })
-        .join("");
-
-      if (frame < frames) {
-        setTimeout(tick, interval);
-      } else {
-        el.textContent = final;
-        scrambling = false;
-      }
-    };
-    tick();
-  }
-
-  if (gradientText && !prefersReducedMotion) {
-    const final = gradientText.dataset.text || gradientText.textContent;
-    scrambleText(gradientText, final);
-    gradientText.addEventListener("mouseenter", () => scrambleText(gradientText, final));
-  }
-
   /* ---------- Custom cursor: HUD reticle ---------- */
   if (!isCoarsePointer) {
     let mx = window.innerWidth / 2, my = window.innerHeight / 2;
