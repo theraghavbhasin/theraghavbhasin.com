@@ -14,13 +14,13 @@
      claw) instead of reading as a single loop. `sizes` (optional, defaults
      to 1) gives each constellation's brightest named star(s) a slightly
      bigger dot, for a touch of authenticity. Point spread stays short on the
-     side facing the card (checked against the ~1000px breakpoint below
+     side facing the card (checked against the ~1100px breakpoint below
      which this whole layer is hidden) and longer on the outward side. */
   const CONSTELLATIONS = [
     {
       // Big Dipper (Ursa Major) — handle points away from the card. 1.3x the
-      // original spacing: its short side (toward the card) had the most
-      // slack of the four, so it can grow more than Cassiopeia below.
+      // original spacing: its short side (toward the card) has plenty of
+      // slack.
       anchor: [16, 15],
       points: [
         [-234, -78], [-156, -52], [-78, -65], [0, -39],
@@ -28,20 +28,21 @@
       ],
       edges: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 3]],
       sizes: [1, 1, 1.1, 1, 1, 1, 1.3],
-      title: "Brand & Positioning",
-      desc: "Positioning sharp enough to survive a boardroom and a pitch deck.",
+      title: "Brand & Business Strategy",
+      desc: "Positioning and go-to-market — decisions clear enough to defend in a boardroom.",
     },
     {
-      // Orion — shoulders, belt, sword, and feet. 1.3x scale.
-      anchor: [84, 25],
+      // Orion — shoulders, belt, sword, and feet. 1.3x scale. Sits alone on
+      // the right, vertically centred, opposite the two left-hand clusters.
+      anchor: [84, 50],
       points: [
         [-91, -143], [91, -130], [-32.5, -26], [0, -19.5], [32.5, -13],
         [78, 130], [-71.5, 143], [0, 52],
       ],
       edges: [[0, 1], [0, 2], [1, 4], [2, 3], [3, 4], [2, 6], [4, 5], [3, 7]],
       sizes: [1.3, 1.1, 1, 1, 1, 1, 1.3, 0.9],
-      title: "Product",
-      desc: "Websites and products that ship fast and don't fall over.",
+      title: "Web & AI Systems",
+      desc: "Websites, apps, and AI tools engineered to scale — and looked after once they're live.",
     },
     {
       // Scorpius — curving tail with a hooked stinger, claws reach outward.
@@ -54,23 +55,11 @@
       ],
       edges: [[0, 1], [0, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 9], [9, 10]],
       sizes: [1, 1, 1, 1.4, 1, 1, 1, 1, 1, 1, 1],
-      title: "Web & Emerging Tech",
-      desc: "AI Orchestration, web deployments, and the occasional bit of magic.",
-    },
-    {
-      // Cassiopeia — the W. Reaches roughly equally in both directions, so
-      // near a corner anchor it's squeezed between the card on one side and
-      // the viewport edge on the other — only a 1.1x scale fits both.
-      anchor: [87, 70],
-      points: [
-        [132, 22], [66, -55], [0, 11], [-66, -66], [-132, 0],
-      ],
-      edges: [[0, 1], [1, 2], [2, 3], [3, 4]],
-      title: "GTM & Growth",
-      desc: "Campaigns and stories built to move metrics, for real.",
+      title: "Events & Print",
+      desc: "Design, print, and on-the-ground execution — for launches, conferences, and everything in between.",
     },
   ];
-  const CONSTELLATION_MIN_WIDTH = 1050;
+  const CONSTELLATION_MIN_WIDTH = 1100;
   let hoveredConstellation = -1;
 
   /* ---------- Theme toggle ---------- */
@@ -186,6 +175,102 @@
     });
   });
 
+  /* ---------- Privacy & analytics consent ---------- */
+  // Google Analytics only loads once the visitor accepts. The choice lives in
+  // localStorage; if storage is blocked the box simply asks again next visit.
+  const GA_ID = "G-0N78KSBJP6";
+  const CONSENT_KEY = "raghav-consent";
+  const consentEl = document.getElementById("consent");
+  const consentDetails = consentEl?.querySelector(".consent-details");
+  const consentMore = consentEl?.querySelector(".consent-more");
+  const consentStatus = consentEl?.querySelector(".consent-status");
+  const consentClose = consentEl?.querySelector(".consent-close");
+  let analyticsLoaded = false;
+  let consentHideTimer;
+
+  function readConsent() {
+    try { return localStorage.getItem(CONSENT_KEY); } catch { return null; }
+  }
+  function saveConsent(value) {
+    try { localStorage.setItem(CONSENT_KEY, value); } catch {}
+  }
+
+  function loadAnalytics() {
+    window[`ga-disable-${GA_ID}`] = false;
+    if (analyticsLoaded) return;
+    analyticsLoaded = true;
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { window.dataLayer.push(arguments); };
+    window.gtag("js", new Date());
+    window.gtag("config", GA_ID);
+    const s = document.createElement("script");
+    s.async = true;
+    s.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`;
+    document.head.appendChild(s);
+  }
+  // Stops tracking for the rest of this visit and clears GA's cookies, which
+  // it sets on the bare domain (".theraghavbhasin.com").
+  function stopAnalytics() {
+    window[`ga-disable-${GA_ID}`] = true;
+    const host = location.hostname;
+    const domains = ["", host, `.${host.replace(/^www\./, "")}`];
+    document.cookie.split(";")
+      .map((c) => c.split("=")[0].trim())
+      .filter((name) => name.startsWith("_ga"))
+      .forEach((name) => domains.forEach((d) => {
+        document.cookie = `${name}=; Max-Age=0; path=/${d ? `; domain=${d}` : ""}`;
+      }));
+  }
+
+  function setDetailsOpen(open) {
+    if (!consentDetails || !consentMore) return;
+    consentDetails.hidden = !open;
+    consentMore.setAttribute("aria-expanded", String(open));
+    consentMore.textContent = open ? "Show less" : "Read more";
+  }
+  function openConsent({ expanded = false, focus = false } = {}) {
+    if (!consentEl) return;
+    const choice = readConsent();
+    consentStatus.hidden = !choice;
+    consentStatus.textContent = choice === "granted"
+      ? "Analytics is currently on."
+      : "Analytics is currently off.";
+    consentClose.hidden = !choice;
+    setDetailsOpen(expanded);
+    clearTimeout(consentHideTimer);
+    consentEl.hidden = false;
+    void consentEl.offsetWidth; // commit the hidden state so the fade-in runs
+    consentEl.classList.add("visible");
+    if (focus) consentEl.querySelector(".consent-title")?.focus({ preventScroll: true });
+  }
+  function closeConsent() {
+    if (!consentEl || consentEl.hidden) return;
+    consentEl.classList.remove("visible");
+    consentHideTimer = setTimeout(() => { consentEl.hidden = true; }, 300);
+  }
+
+  consentMore?.addEventListener("click", () => setDetailsOpen(consentDetails.hidden));
+  consentClose?.addEventListener("click", closeConsent);
+  consentEl?.querySelectorAll("[data-consent]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const choice = btn.dataset.consent;
+      saveConsent(choice);
+      if (choice === "granted") loadAnalytics();
+      else stopAnalytics();
+      closeConsent();
+    });
+  });
+  document.querySelectorAll("[data-privacy-open]").forEach((btn) => {
+    btn.addEventListener("click", () => openConsent({ expanded: true, focus: true }));
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && readConsent()) closeConsent();
+  });
+
+  const savedConsent = readConsent();
+  if (savedConsent === "granted") loadAnalytics();
+  else if (!savedConsent) setTimeout(() => openConsent(), 1200);
+
   /* ---------- Constellation hover/tap labels ---------- */
   const constellationLabel = document.getElementById("constellation-label");
   const constellationTitleEl = constellationLabel?.querySelector(".constellation-title");
@@ -200,7 +285,8 @@
     const [ax, ay] = data.anchor;
     const rawLeft = (window.innerWidth * ax) / 100;
     const left = Math.min(Math.max(rawLeft, 130), window.innerWidth - 130);
-    const top = ay < 50
+    // Top-half and vertically centred anchors get the label below them.
+    const top = ay <= 50
       ? (window.innerHeight * ay) / 100 + 210
       : (window.innerHeight * ay) / 100 - 210;
     constellationLabel.style.left = `${left}px`;

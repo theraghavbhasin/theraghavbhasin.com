@@ -191,7 +191,7 @@ button.theme-toggle {
    including touch (tap toggles the label — see script.js). Each cluster's
    points are asymmetric (biased away from the card, see CONSTELLATIONS in
    script.js), so this box is a loose bounding rect, not a tight fit. Hidden
-   below ~1050px — the anchors sit close to the viewport edge specifically so
+   below ~1100px — the anchors sit close to the viewport edge specifically so
    the (now much larger) point spread clears the card down to that width. */
 .constellation-hits {
   display: none;
@@ -246,7 +246,7 @@ button.theme-toggle {
   color: var(--text-muted);
 }
 
-@media (min-width: 1050px) {
+@media (min-width: 1100px) {
   .constellation-hits { display: block; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -317,8 +317,8 @@ main {
   -webkit-backdrop-filter: blur(10px) saturate(140%);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 38px 32px 32px;
-  max-width: 480px;
+  padding: 42px 36px 36px;
+  max-width: 520px;
   width: 100%;
   text-align: center;
   box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.35);
@@ -409,6 +409,7 @@ main {
   color: var(--text-faint);
   font-size: 0.78rem;
   letter-spacing: 0.02em;
+  text-wrap: balance;
 }
 
 .tagline {
@@ -551,6 +552,160 @@ main {
   font-size: 13px;
   color: var(--text-faint);
   margin: 0;
+}
+
+/* ---------- Privacy / consent box ---------- */
+/* No display rule on .consent or its parts, so the [hidden] attribute keeps
+   working. Accept and Decline share one style on purpose: consent rules
+   expect refusing to be as easy as agreeing. */
+.footer-privacy {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border-bottom: 1px solid transparent;
+  transition: color 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+.footer-privacy:hover {
+  color: var(--indigo);
+  border-color: var(--indigo);
+}
+
+.consent {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  z-index: 60;
+  width: min(360px, calc(100vw - 32px));
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  padding: 16px 18px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  background: color-mix(in srgb, var(--bg) 84%, transparent);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  box-shadow: 0 20px 50px -20px rgba(0, 0, 0, 0.45);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: left;
+  opacity: 0;
+  translate: 0 12px;
+  transition: opacity 0.3s var(--ease), translate 0.3s var(--ease);
+}
+.consent.visible {
+  opacity: 1;
+  translate: 0 0;
+}
+.consent-title {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--indigo);
+  outline: none;
+}
+.consent-text,
+.consent-status {
+  margin: 0 0 12px;
+  color: var(--text-muted);
+}
+.consent-status {
+  margin-top: -6px;
+  color: var(--text);
+  font-weight: 600;
+}
+.consent-details {
+  margin: 0 0 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.consent-details dt {
+  font-weight: 600;
+  color: var(--text);
+}
+.consent-details dd {
+  margin: 0 0 8px;
+  color: var(--text-muted);
+}
+.consent-details dd:last-child { margin-bottom: 0; }
+.consent-details a {
+  color: var(--indigo);
+  border-bottom: 1px solid currentColor;
+}
+.consent-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.consent-more {
+  margin-right: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: color 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+.consent-more:hover {
+  color: var(--indigo);
+  border-color: var(--indigo);
+}
+.consent-btn {
+  padding: 7px 16px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated-strong);
+  font: inherit;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.3s var(--ease), color 0.3s var(--ease);
+}
+.consent-btn:hover {
+  border-color: var(--indigo);
+  color: var(--indigo);
+}
+.consent-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  padding: 6px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition: color 0.3s var(--ease), background 0.3s var(--ease);
+}
+.consent-close:hover {
+  color: var(--text);
+  background: var(--bg-elevated-strong);
+}
+.consent-close svg { width: 100%; height: 100%; }
+.consent :focus-visible,
+.footer-privacy:focus-visible {
+  outline: 2px solid var(--indigo);
+  outline-offset: 2px;
+}
+@media (max-width: 480px) {
+  .consent {
+    left: 16px;
+    right: 16px;
+    bottom: 16px;
+    width: auto;
+  }
 }
 
 /* ---------- Reduced motion ---------- */
